@@ -76,15 +76,8 @@ func (this *Server) ListenMessage() {
 func (this *Server) Header(conn net.Conn) {
 	//....当前链接啊的业务
 
-	//	用户上线
-	user := NewUser(conn)
-	this.mapLock.Lock()
-	this.OnlineMap[user.Name] = user
-	//user.ListMessage()
-	this.mapLock.Unlock()
-
-	//	广播当前用户上线消息
-	this.BroadCast(user, "已上线")
+	user := NewUser(conn, this)
+	user.Online()
 
 	//接受客户端发送的消息
 	go func() {
@@ -93,7 +86,7 @@ func (this *Server) Header(conn net.Conn) {
 		for {
 			length, err := conn.Read(buf)
 			if length == 0 {
-				this.BroadCast(user, "下线")
+				user.Offline()
 				return
 			}
 
@@ -104,8 +97,9 @@ func (this *Server) Header(conn net.Conn) {
 
 			//	除去消息的"\n"全局广播
 			msg := string(buf[:length])
-			fmt.Println(msg)
-			this.BroadCast(user, msg)
+
+			//	用户针对msg消息的处理
+			user.DoMessage(msg)
 		}
 	}()
 
