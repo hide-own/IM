@@ -54,7 +54,26 @@ func (this *User) Offline() {
 
 // DoMessage 用户处理消息
 func (this *User) DoMessage(msg string) {
-	this.Server.BroadCast(this, msg)
+	if msg == "w" {
+		//查询用户
+		this.Server.mapLock.Lock()
+		for _, user := range this.Server.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + "在线...\n"
+			this.sendMsg(onlineMsg)
+		}
+		this.Server.mapLock.Unlock()
+	} else {
+		this.Server.BroadCast(this, msg)
+	}
+}
+
+// 发送消息的处理
+func (this *User) sendMsg(msg string) {
+	_, err := this.conn.Write([]byte(msg))
+	if err != nil {
+		fmt.Println("")
+		return
+	}
 }
 
 // ListMessage 监听当前用户频道
