@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 )
 
@@ -14,10 +13,8 @@ type User struct {
 
 // ListMessage 监听当前用户频道
 func (this *User) ListMessage() {
-	fmt.Println("List")
 	for {
 		msg := <-this.C
-		fmt.Println(msg)
 		this.conn.Write([]byte(msg + "\n"))
 	}
 }

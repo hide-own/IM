@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -74,7 +75,6 @@ func (this *Server) ListenMessage() {
 
 func (this *Server) Header(conn net.Conn) {
 	//....当前链接啊的业务
-	//fmt.Println("链接建立成功")
 
 	//	用户上线
 	user := NewUser(conn)
@@ -85,6 +85,29 @@ func (this *Server) Header(conn net.Conn) {
 
 	//	广播当前用户上线消息
 	this.BroadCast(user, "已上线")
+
+	//接受客户端发送的消息
+	go func() {
+		buf := make([]byte, 4096)
+
+		for {
+			length, err := conn.Read(buf)
+			if length == 0 {
+				this.BroadCast(user, "下线")
+				return
+			}
+
+			if err != nil && err != io.EOF {
+				fmt.Println("conn read error: ", err)
+				return
+			}
+
+			//	除去消息的"\n"全局广播
+			msg := string(buf[:length])
+			fmt.Println(msg)
+			this.BroadCast(user, msg)
+		}
+	}()
 
 	//	当前header阻塞
 	select {}
