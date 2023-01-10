@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -73,16 +75,17 @@ func (this *Server) ListenMessage() {
 	}
 }
 
+// Header 当前链接啊的业务
 func (this *Server) Header(conn net.Conn) {
-	//....当前链接啊的业务
-
 	user := NewUser(conn, this)
 	user.Online()
+
+	//是否活跃
+	isLive := make(chan bool)
 
 	//接受客户端发送的消息
 	go func() {
 		buf := make([]byte, 4096)
-
 		for {
 			length, err := conn.Read(buf)
 			if length == 0 {
@@ -97,12 +100,29 @@ func (this *Server) Header(conn net.Conn) {
 
 			//	除去消息的"\n"全局广播
 			msg := string(buf[:length])
-
 			//	用户针对msg消息的处理
 			user.DoMessage(msg)
+
+			isLive <- true
 		}
 	}()
 
 	//	当前header阻塞
-	select {}
+	for {
+		select {
+		case <-isLive:
+			//	TODO:激活select更新定时器
+		case <-time.After(time.Second * 10):
+			//  超时处理
+			user.sendMsg("超时强踢")
+
+			close(user.C)
+			err := conn.Close()
+			if err != nil {
+				runtime.Goexit()
+				return
+			}
+			return
+		}
+	}
 }
