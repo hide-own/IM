@@ -112,7 +112,7 @@ func (this *Server) Header(conn net.Conn) {
 		select {
 		case <-isLive:
 			//	TODO:激活select更新定时器
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 300):
 			//  超时处理
 			user.sendMsg("超时强踢")
 
